@@ -1,0 +1,57 @@
+import bs4 as bs
+import pickle
+import requests
+
+#Grab tickers for S&P500 from Wikipedia
+def save_sp500_tickers():
+    resp = requests.get('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
+    soup = bs.BeautifulSoup(resp.text, 'lxml')
+    table = soup.find('table', {'class':'wikitable sortable'})
+    tickers = []
+    for row in table.findAll('tr')[1:]:
+        ticker = row.findAll('td')[0].text
+        tickers.append(ticker)
+    with open("sp500tickers.pickle", "wb") as f:
+        pickle.dump(tickers, f)
+    print(tickers)
+    return tickers
+
+save_sp500_tickers()
+
+def save_sp500_names():
+    resp = requests.get('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
+    soup = bs.BeautifulSoup(resp.text, 'lxml')
+    table = soup.find('table', {'class':'wikitable sortable'})
+    names = []
+    for row in table.findAll('tr')[1:]:
+        name = row.findAll('td')[1].text
+        names.append(name)
+    with open("sp500tickers.pickle", "wb") as f:
+        pickle.dump(names, f)
+    print(names)
+    return names
+
+save_sp500_names()
+
+#Notes
+#resp = requests.get() pulls down the entire source code
+#soup = bs.BeautifulSoup() is a way to parse the code out
+#table = soup.find() is a way to grab only the 'wikitable sortable'
+
+#Try to create a dictionary with the names and stocks
+
+company_dict = {}
+tickers = []
+for row in table.findAll('tr')[1:]:
+    ticker = row.findAll('td')[0].text
+    tickers.append(ticker)
+names = []
+for row in table.findAll('tr')[1:]:
+    name = row.findAll('td')[1].text
+    names.append(name)
+for i in range(len(names)):
+    company_dict[names[i]] = (names[i],tickers[i])
+print(company_dict)
+
+
+

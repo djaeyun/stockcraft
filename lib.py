@@ -2,13 +2,15 @@ import praw
 import pandas as pd
 pd.set_option('display.max_columns', 500)
 import os
+import bs4 as bs
+import pickle
+import requests
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.classify import NaiveBayesClassifier
 from nltk.corpus import subjectivity
 from nltk.sentiment import SentimentAnalyzer
 from nltk.sentiment.util import *
-
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import tokenize
 
@@ -16,9 +18,10 @@ reddit = praw.Reddit(user_agent='Comment Extraction (by /u/USERNAME)',
                      client_id=os.environ["REDDIT_CLIENT_ID"], client_secret=os.environ["REDDIT_CLIENT_SECRET"],
                      username=os.environ["REDDIT_USERNAME"], password=os.environ["REDDIT_PASSWORD"])
 
-submission = reddit.submission(id='ae67yi')
+submission = reddit.submission(id='ah2hwz')
 
 comment_list = []
+submission.comments.replace_more(limit=0)
 for comment in submission.comments.list():
         comment_dict = {}
         comment_dict["author"] = comment.author
@@ -30,25 +33,36 @@ for comment in submission.comments.list():
 
 df = pd.DataFrame(comment_list)
 
+#Use Wikipedia's S&P 500 List to grab top 500 Names & Tickers
+#Problem: How to remove "Inc." in company names?
+resp = requests.get('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
+soup = bs.BeautifulSoup(resp.text, 'lxml')
+table = soup.find('table', {'class':'wikitable sortable'})
+
 company_dict = {}
-company_dict["google"] = ["google", "goog"]
-company_dict["amazon"] = ["amazon","amzn"]
-company_dict["apple"] = ["apple","appl"]
-company_dict["micron"] = ["micron","mu"]
-company_dict["organogenesis holdings"] = ["organogenesis holdings","orgo"]
+tickers = []
+for row in table.findAll('tr')[1:]:
+        ticker = row.findAll('td')[0].text
+        tickers.append(ticker)
+names = []
+for row in table.findAll('tr')[1:]:
+        name = row.findAll('td')[1].text
+        names.append(name)
+for i in range(len(names)):
+        company_dict[names[i]] = [names[i], tickers[i]]
 
 def recognize_company(row):
         body = row.body
-        print("\n\n",body)
+        #print("\n\n",body)
         recognized_companies = []
         for key,value in company_dict.items():
-                print(key,value)
+                #print(key,value)
                 for text in value:
-                        print(text)
+                        #print(text)
                         if text in body.lower():
-                                print("match")
+                                #print("match")
                                 recognized_companies.append(key) 
-        print(recognized_companies)
+        #print(recognized_companies)
         return recognized_companies
 
 df["companies"] = df.apply(lambda row:recognize_company(row),axis=1)
@@ -79,7 +93,6 @@ def sentiment_analysis(row):
                 return "neutral"
         
 df["sentiment"] = df.apply(lambda row:sentiment_analysis(row),axis=1)
-df = df[df.companies.apply(lambda x:len(x) != 0)]
 
 #did stock rise or fall within a day of this comment
 #function that looks at each row, company, time, then figures out what stock price was 24 hrs later

@@ -1,0 +1,21 @@
+import bs4 as bs
+import urllib.request
+
+sauce = urllib.request.urlopen('https://pythonprogramming.net/parsememcparseface/').read()
+
+#Turn the above into a BeautifulSoup project
+#lxml is a parser
+soup = bs.BeautifulSoup(sauce, 'lxml')
+
+#print(soup.p)
+#print(soup.find_all('p'))
+
+#Don't always want the tag, so use .string or .text
+#for paragraph in soup.find_all('p'):
+    #print(paragraph.string)
+    #print(paragraph.string)
+    #print(soup.get_text())
+
+#for url in soup.find_all('a'):
+    #print(url) #Get entire tag
+    #print(url.get('href')) #Get href text in order to get your links 
